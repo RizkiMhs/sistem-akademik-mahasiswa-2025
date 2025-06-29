@@ -11,5 +11,6 @@ class FirebaseApi {
     final token = await _firebaseMessaging.getToken();
 
     print('Token: $token');
+    
   }
 }

@@ -1,361 +1,309 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/info/PesanPage.dart';
 import 'package:flutter_application_1/info/pesan.dart';
 import 'package:flutter_application_1/infoakun/datadiri.dart';
 import 'package:flutter_application_1/infoakun/ubahsandi.dart';
-import 'package:flutter_application_1/utils/color.dart';
+import 'package:flutter_application_1/utils/color.dart'; // Pastikan file ini ada
 import 'package:flutter_application_1/views/homepage.dart';
-import 'package:flutter_application_1/views/login2.dart';
 import 'package:get/get.dart';
 import 'package:flutter_application_1/app/controllers/auth_controller.dart';
 
-class infoakun extends StatefulWidget {
-  const infoakun({super.key});
+// Mengubah menjadi StatelessWidget untuk efisiensi karena state dikelola oleh GetX
+class InfoAkun extends StatelessWidget {
+  const InfoAkun({super.key});
 
-  @override
-  State<infoakun> createState() => _infoakunState();
-}
-
-class _infoakunState extends State<infoakun> {
-  final authC = Get.find<AuthController>();
   @override
   Widget build(BuildContext context) {
+    // Mengambil instance AuthController di dalam build method
+    final AuthController authController = Get.find<AuthController>();
+
     return Scaffold(
       backgroundColor: bgcolor,
-      appBar: PreferredSize(
-          preferredSize: Size.fromHeight(80),
-          child: ClipRRect(
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
-            child: AppBar(
-              backgroundColor: greencolor,
-              automaticallyImplyLeading: false,
-              flexibleSpace: Padding(
-                padding: EdgeInsets.only(top: 50),
-                child: Column(
-                  children: [
-                    Text(
-                      "Informasi Akun",
-                      style: TextStyle(
-                          fontFamily: 'PoppinsBold',
-                          fontSize: 25,
-                          color: whitecolor),
-                    ),
-                    Text(
-                      "Universitas Malikussaleh",
-                      style: TextStyle(
-                          fontFamily: 'PoppinsRegular',
-                          fontSize: 14,
-                          color: whitecolor),
-                    )
-                  ],
-                ),
-              ),
+      appBar: _buildAppBar(),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            const SizedBox(height: 34),
+            // Widget untuk header profil yang sekarang dinamis
+            _buildProfileHeader(authController),
+            const SizedBox(height: 20),
+            _buildStatusMahasiswa(),
+            const SizedBox(height: 10),
+            // Menu item yang lebih rapi
+            _buildMenuItem(
+              context: context,
+              icon: 'asset/image/User Folder.png',
+              title: "Data Diri",
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const DataDiri()));
+              },
             ),
-          )),
-      body: Column(
-        children: [
-          SizedBox(
-            height: 34,
-          ),
-          Container(
-            width: double.infinity,
-            height: 113,
-            margin: const EdgeInsets.symmetric(horizontal: 20),
-            decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10), color: orangecolor),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
+            const SizedBox(height: 10),
+            _buildMenuItem(
+              context: context,
+              icon:
+                  'asset/image/User Folder.png', // Ganti dengan ikon yang sesuai jika ada
+              title: "Ubah Password",
+              onTap: () {
+                Navigator.of(context).push(
+                    MaterialPageRoute(builder: (context) => const UbahSandi()));
+              },
+            ),
+            const SizedBox(height: 20),
+            // Tombol keluar yang sudah diperbaiki
+            _buildLogoutButton(context, authController),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(context),
+    );
+  }
+
+  /// Widget untuk AppBar yang dibuat terpisah agar rapi
+  PreferredSizeWidget _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(80),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(15)),
+        child: AppBar(
+          backgroundColor: greencolor,
+          automaticallyImplyLeading: false,
+          flexibleSpace: const Padding(
+            padding: EdgeInsets.only(top: 40),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 89,
-                  height: 89,
-                  child: Image.asset('asset/image/profile.png'),
+                Text(
+                  "Informasi Akun",
+                  style: TextStyle(
+                      fontFamily: 'PoppinsBold',
+                      fontSize: 25,
+                      color: Colors.white),
                 ),
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Selamat Datang',
-                      style: TextStyle(
-                        fontFamily: 'PoppinsRegular',
-                        fontSize: 12,
-                        color: Color(0xFFFFFFFF),
-                      ),
-                    ),
-                    Text(
-                      'Pulan Bin Fulan',
-                      style: TextStyle(
-                        fontFamily: 'Poppinsmedium',
-                        fontSize: 16,
-                        color: Color(0xFFFFFFFF),
-                      ),
-                    ),
-                    Text(
-                      '230199080',
-                      style: TextStyle(
-                        fontFamily: 'PoppinsRegular',
-                        fontSize: 12,
-                        color: Color(0xFFFFFFFF),
-                      ),
-                    ),
-                  ],
+                Text(
+                  "Universitas Malikussaleh",
+                  style: TextStyle(
+                      fontFamily: 'PoppinsRegular',
+                      fontSize: 14,
+                      color: Colors.white),
                 )
               ],
             ),
           ),
-          SizedBox(
-            height: 20,
+        ),
+      ),
+    );
+  }
+
+  /// Widget untuk menampilkan header profil yang dinamis
+  Widget _buildProfileHeader(AuthController authController) {
+    return Container(
+      width: double.infinity,
+      height: 113,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: orangecolor,
+      ),
+      // Obx akan otomatis me-rebuild widget ini jika data currentUser berubah
+      child: Obx(() {
+        final user = authController.currentUser.value;
+        // Tampilkan loading jika data belum ada
+        if (user == null) {
+          return const Center(
+              child: CircularProgressIndicator(color: Colors.white));
+        }
+        return Row(
+          children: [
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: Colors.white,
+              backgroundImage:
+                  (user.fotoUrl != null && user.fotoUrl!.isNotEmpty)
+                      ? NetworkImage(user.fotoUrl!)
+                      : const AssetImage('asset/image/profile.png')
+                          as ImageProvider,
+            ),
+            const SizedBox(width: 15),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Selamat Datang',
+                  style: TextStyle(
+                      fontFamily: 'PoppinsRegular',
+                      fontSize: 12,
+                      color: Colors.white),
+                ),
+                Text(
+                  user.nama, // <-- Data dinamis dari controller
+                  style: const TextStyle(
+                      fontFamily: 'Poppinsmedium',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white),
+                ),
+                Text(
+                  user.nim, // <-- Data dinamis dari controller
+                  style: const TextStyle(
+                      fontFamily: 'PoppinsRegular',
+                      fontSize: 12,
+                      color: Colors.white),
+                ),
+              ],
+            )
+          ],
+        );
+      }),
+    );
+  }
+
+  /// Widget untuk menampilkan status mahasiswa
+  Widget _buildStatusMahasiswa() {
+    return Container(
+      width: double.infinity,
+      height: 53,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: whitecolor,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          const Text(
+            "Status Mahasiswa",
+            style: TextStyle(fontFamily: 'Poppinssemibold', fontSize: 18),
           ),
           Container(
-            width: double.infinity,
-            height: 53,
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              color: whitecolor,
+              border: Border.all(color: greencolor),
             ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Status Mahasiswa",
-                    style:
-                        TextStyle(fontFamily: 'Poppinssemibold', fontSize: 18),
-                  ),
-                  Container(
-                    width: 67,
-                    height: 27,
-                    decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: greencolor)),
-                    child: Center(
-                      child: Text("Aktif"),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 10,
-          ),
-          GestureDetector(
-            onTap: () {
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (BuildContext) => const datadiri()));
-            },
-            child: Container(
-              width: double.infinity,
-              height: 53,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: whitecolor,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 10, right: 30),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Image.asset('asset/image/User Folder.png'),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Text(
-                          "Data Diri",
-                          style: TextStyle(
-                              fontFamily: 'Poppinssemibold', fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          ">",
-                          style: TextStyle(
-                              fontFamily: 'Poppinssemibold', fontSize: 25),
-                        )
-                      ],
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 10,
-          ),
-          GestureDetector(
-            onTap: () {
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  builder: (BuildContext) => const ubahsandi()));
-            },
-            child: Container(
-              width: double.infinity,
-              height: 53,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: whitecolor,
-              ),
-              child: Padding(
-                padding: const EdgeInsets.only(left: 10, right: 30),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Image.asset('asset/image/User Folder.png'),
-                        SizedBox(
-                          width: 5,
-                        ),
-                        Text(
-                          "Ubah Password",
-                          style: TextStyle(
-                              fontFamily: 'Poppinssemibold', fontSize: 16),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          ">",
-                          style: TextStyle(
-                              fontFamily: 'Poppinssemibold', fontSize: 25),
-                        )
-                      ],
-                    )
-                  ],
-                ),
-              ),
-            ),
-          ),
-          SizedBox(
-            height: 20,
-          ),
-          GestureDetector(
-            onTap: () async {
-              // Konfirmasi sebelum logout
-              bool? shouldLogout = await showDialog(
-                context: context,
-                builder: (BuildContext context) {
-                  return AlertDialog(
-                    title: const Text("Keluar"),
-                    content: const Text("Apakah Anda yakin ingin keluar?"),
-                    actions: [
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(false); // Batal
-                        },
-                        child: const Text("Batal"),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Navigator.of(context).pop(true); // Lanjutkan
-                        },
-                        child: const Text("Keluar"),
-                      ),
-                    ],
-                  );
-                },
-              );
-
-              // Jika pengguna memilih untuk logout
-              if (shouldLogout ?? false) {
-                try {
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.of(context).pushReplacement(MaterialPageRoute(
-                      builder: (BuildContext) => const LoginTwo()));
-                } catch (e) {
-                  // Menampilkan pesan error jika logout gagal
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Gagal logout: $e"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              }
-            },
-            child: Container(
-              width: double.infinity,
-              height: 53,
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                color: Colors.black,
-              ),
-              child: Center(
+            child: const Center(
                 child: Text(
-                  "Keluar",
-                  style: TextStyle(
-                      fontFamily: 'Poppinssemibold',
-                      fontSize: 18,
-                      color: whitecolor),
-                ),
-              ),
-            ),
+                    "Aktif")), // <-- Status masih statis, bisa diubah nanti jika ada data dari API
           ),
         ],
       ),
-      bottomNavigationBar: BottomAppBar(
-        color: orangecolor,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 37),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    );
+  }
+
+  /// Widget generik untuk membuat item menu
+  Widget _buildMenuItem(
+      {required BuildContext context,
+      required String icon,
+      required String title,
+      required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        height: 53,
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.only(left: 10, right: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: whitecolor,
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                        builder: (BuildContext) => const Pesan()));
-                  },
-                  child: Container(
-                    child: Image.asset('asset/image/Circled Envelope.png'),
-                  ),
-                ),
-                // SizedBox(
-                //   width: 68,
-                // ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                        builder: (BuildContext) => const Homepage()));
-                  },
-                  child: Container(
-                    child: Image.asset('asset/image/Home (1).png'),
-                  ),
-                ),
-                // SizedBox(
-                //   width: 62,
-                // ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(MaterialPageRoute(
-                        builder: (BuildContext) => const infoakun()));
-                  },
-                  child: Container(
-                    width: 54,
-                    height: 54,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      color: Colors.white,
-                    ),
-                    child: Image.asset('asset/image/User.png'),
-                  ),
+                Image.asset(icon,
+                    width: 24, height: 24), // Ukuran ikon disesuaikan
+                const SizedBox(width: 10),
+                Text(
+                  title,
+                  style: const TextStyle(
+                      fontFamily: 'Poppinssemibold', fontSize: 16),
                 ),
               ],
             ),
+            const Icon(Icons.arrow_forward_ios, size: 18, color: Colors.grey),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Widget untuk tombol keluar
+  Widget _buildLogoutButton(
+      BuildContext context, AuthController authController) {
+    return GestureDetector(
+      onTap: () {
+        // Gunakan Get.defaultDialog untuk dialog yang lebih konsisten dengan GetX
+        Get.defaultDialog(
+          title: "Konfirmasi Keluar",
+          middleText: "Apakah Anda yakin ingin keluar?",
+          textConfirm: "Ya, Keluar",
+          textCancel: "Batal",
+          confirmTextColor: Colors.white,
+          onConfirm: () {
+            // Panggil metode logout dari controller, BUKAN FirebaseAuth
+            authController.logout();
+          },
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        height: 53,
+        margin: const EdgeInsets.symmetric(horizontal: 20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: Colors.black,
+        ),
+        child: Center(
+          child: Text(
+            "Keluar",
+            style: TextStyle(
+                fontFamily: 'Poppinssemibold', fontSize: 18, color: whitecolor),
           ),
         ),
+      ),
+    );
+  }
+
+  /// Widget untuk Bottom Navigation Bar, dibuat terpisah agar rapi
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return BottomAppBar(
+      color: orangecolor,
+      height: 60,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          IconButton(
+            icon: Image.asset('asset/image/Circled Envelope.png'),
+            onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const PesanPage())),
+          ),
+          IconButton(
+            icon: Image.asset('asset/image/Home (1).png'),
+            onPressed: () => Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const Homepage())),
+          ),
+          // Tombol Akun yang aktif
+          Container(
+            width: 54,
+            height: 54,
+            decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(15),
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.15), blurRadius: 6)
+                ]),
+            child: Center(
+                child:
+                    Image.asset('asset/image/User.png', width: 28, height: 28)),
+          ),
+        ],
       ),
     );
   }

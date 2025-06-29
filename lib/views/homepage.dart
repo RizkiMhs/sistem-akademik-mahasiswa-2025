@@ -1,1339 +1,414 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/bahan%20kuliah/bahankuliah.dart';
+import 'package:flutter_application_1/app/controllers/auth_controller.dart';
+import 'package:flutter_application_1/app/controllers/pengumuman_controller.dart';
+import 'package:flutter_application_1/info/PesanPage.dart';
 import 'package:flutter_application_1/info/pesan.dart';
 import 'package:flutter_application_1/infoakun/infoakun.dart';
 import 'package:flutter_application_1/jadwal%20kuliah/menu_jadwal.dart';
-import 'package:flutter_application_1/khs/info_khs.dart';
 import 'package:flutter_application_1/krs/krs.dart';
+import 'package:flutter_application_1/khs/infokhs.dart';
+import 'package:flutter_application_1/krs/krsmenu.dart';
 import 'package:flutter_application_1/saran/saran.dart';
 import 'package:flutter_application_1/tagihan/tagihan.dart';
 import 'package:flutter_application_1/trNilai/transkipnilai.dart';
-import 'package:flutter_application_1/views/detail_pmn.dart';
-import 'package:flutter_application_1/views/informasi_matkul.dart';
-import 'package:flutter_application_1/views/login2.dart';
-import 'package:get/get.dart';
-import 'package:flutter_application_1/app/controllers/auth_controller.dart';
+import 'package:flutter_application_1/trNilai/trnilai.dart';
+import 'package:flutter_application_1/bimbingan/bimbingan.dart';
 
-class Homepage extends StatefulWidget {
+import 'package:flutter_application_1/bahan%20kuliah/bahankuliah.dart';
+import 'package:flutter_application_1/models/pengumuman_model.dart';
+import 'package:flutter_application_1/utils/color.dart';
+import 'package:flutter_application_1/views/detail_pengumuman.dart';
+import 'package:flutter_application_1/views/informasi_matkul.dart';
+
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+
+// Model data untuk item menu
+class MenuItem {
+  final String assetPath;
+  final String title;
+  final Widget destinationPage;
+  final Color color;
+
+  MenuItem({
+    required this.assetPath,
+    required this.title,
+    required this.destinationPage,
+    required this.color,
+  });
+}
+
+class Homepage extends StatelessWidget {
   const Homepage({super.key});
 
   @override
-  State<Homepage> createState() => _HomepageState();
-}
-
-class _HomepageState extends State<Homepage> {
-  final authC = Get.find<AuthController>();
-  @override
   Widget build(BuildContext context) {
+    // Inisialisasi controller. find() untuk yang sudah ada, put() untuk yang baru.
+    final AuthController authController = Get.find<AuthController>();
+    final PengumumanController pengumumanController =
+        Get.put(PengumumanController());
+
+    final List<MenuItem> academicMenus = [
+      MenuItem(
+          assetPath: 'asset/image/Vector.png',
+          title: 'Jadwal\nKuliah',
+          destinationPage: const JadwalKuliahPage(),
+          color: const Color(0xFF00712D)),
+      MenuItem(
+          assetPath: 'asset/image/School.png',
+          title: 'Bimbingan\nAkademik',
+          destinationPage: const BimbinganHistoryPage(),
+          color: const Color(0xFFFF9100)),
+      MenuItem(
+          assetPath: 'asset/image/Exam.png',
+          title: 'Transkrip\nNilai',
+          destinationPage: const TranskipNilaiPage(),
+          color: const Color(0xFF00712D)),
+      MenuItem(
+          assetPath: 'asset/image/Book Reading.png',
+          title: 'Informasi\nMatakuliah',
+          destinationPage: const informasi(),
+          color: const Color(0xFFFF9100)),
+      MenuItem(
+          assetPath: 'asset/image/Ereader.png',
+          title: 'Kartu\nRencana\nStudi',
+          destinationPage: const KrsMenu(),
+          color: const Color(0xFF00712D)),
+      MenuItem(
+          assetPath: 'asset/image/Knowledge Sharing.png',
+          title: 'Kartu Hasil\nStudi',
+          destinationPage: const InfoKhs(),
+          color: const Color(0xFFFF9100)),
+      // MenuItem(
+      //     assetPath: 'asset/image/Info Popup.png',
+      //     title: 'Kritik\nDan Saran',
+      //     destinationPage: const Saran(),
+      //     color: const Color(0xFF00712D)),
+      // MenuItem(
+      //     assetPath: 'asset/image/Order Completed.png',
+      //     title: 'Tagihan\nUKT',
+      //     destinationPage: const Tagihan(),
+      //     color: const Color(0xFFFF9100)),
+    ];
+
     return Scaffold(
-      // appBar: PreferredSize(
-      //   preferredSize: Size.fromHeight(50),
-      //   child: ClipRRect(
-      //     borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
-      //     child: AppBar(
-      //       backgroundColor: greencolor,
-      //       flexibleSpace: Padding(
-      //         padding: const EdgeInsets.only(top: 35),
-      //         child: Column(
-      //           crossAxisAlignment: CrossAxisAlignment.center,
-      //           children: [
-      //             Padding(
-      //               padding: const EdgeInsets.only(left: 0),
-      //               child: Text(
-      //                 "Sistem Akademik",
-      //                 style: TextStyle(
-      //                     fontFamily: 'Poppinsmedium',
-      //                     fontSize: 16,
-      //                     color: whitecolor),
-      //               ),
-      //             ),
-      //             Padding(
-      //               padding: const EdgeInsets.only(left: 0, top: 1),
-      //               child: Text(
-      //                 "Universitas Malikussaleh",
-      //                 style: TextStyle(
-      //                     fontFamily: 'PoppinsRegular',
-      //                     fontSize: 12,
-      //                     color: whitecolor),
-      //               ),
-      //             ),
-      //           ],
-      //         ),
-      //       ),
-      //     ),
-      //   ),
-      // ),
-      body: SingleChildScrollView(
+      backgroundColor: Colors.white,
+      body: RefreshIndicator(
+        onRefresh: pengumumanController.fetchPengumuman,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              Obx(() {
+                if (authController.currentUser.value == null) {
+                  return const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator()));
+                }
+                return _buildProfileHeader(authController);
+              }),
+              _buildMenuSectionTitle('Menu Akademik'),
+              _buildAcademicMenu(context, academicMenus),
+              const SizedBox(
+                  height: 25), // Jarak antara menu dan judul pengumuman
+              _buildMenuSectionTitle('Pengumuman'),
+
+              Obx(() {
+                if (pengumumanController.isLoading.value &&
+                    pengumumanController.pengumumanList.isEmpty) {
+                  return const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: CircularProgressIndicator()));
+                }
+                if (pengumumanController.pengumumanList.isEmpty) {
+                  return const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(32.0),
+                          child: Text("Belum ada pengumuman.")));
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding:
+                      EdgeInsets.zero, // Hapus padding default dari ListView
+                  itemCount: pengumumanController.pengumumanList.length,
+                  itemBuilder: (context, index) {
+                    final pengumuman =
+                        pengumumanController.pengumumanList[index];
+                    return _buildAnnouncementCard(context, pengumuman);
+                  },
+                );
+              }),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNavigationBar(context),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      height: 81,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: Color(0xFF00712D),
+        borderRadius: BorderRadius.only(
+            bottomLeft: Radius.circular(20), bottomRight: Radius.circular(20)),
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(height: 20),
+          Text('Sistem Akademik',
+              style: TextStyle(
+                  fontFamily: 'Poppinsmedium',
+                  fontSize: 16,
+                  color: Colors.white)),
+          Text('Universitas Malikussaleh',
+              style: TextStyle(
+                  fontFamily: 'PoppinsRegular',
+                  fontSize: 12,
+                  color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileHeader(AuthController authController) {
+    final user = authController.currentUser.value!;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+          color: const Color(0xFFFF9100),
+          borderRadius: BorderRadius.circular(10)),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 28.5,
+            backgroundColor: Colors.white,
+            backgroundImage: user.fotoUrl != null && user.fotoUrl!.isNotEmpty
+                ? NetworkImage(user.fotoUrl!)
+                : const AssetImage('asset/image/profile.png') as ImageProvider,
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Selamat Datang',
+                  style: TextStyle(
+                      fontFamily: 'PoppinsRegular',
+                      fontSize: 12,
+                      color: Colors.white)),
+              Text(user.nama,
+                  style: const TextStyle(
+                      fontFamily: 'Poppinsmedium',
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold)),
+              Text(user.nim,
+                  style: const TextStyle(
+                      fontFamily: 'PoppinsRegular',
+                      fontSize: 12,
+                      color: Colors.white)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMenuSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 20, bottom: 12),
+      child: Text(
+        title,
+        style: const TextStyle(
+            fontFamily: 'Poppinsmedium',
+            fontSize: 16,
+            color: Color(0xFF00712D),
+            fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
+  Widget _buildAcademicMenu(BuildContext context, List<MenuItem> menus) {
+    return SizedBox(
+      height: 122,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: menus.length,
+        padding: const EdgeInsets.only(left: 20, right: 5),
+        itemBuilder: (context, index) {
+          final menu = menus[index];
+          return _buildMenuItem(
+              context: context,
+              assetPath: menu.assetPath,
+              title: menu.title,
+              destinationPage: menu.destinationPage,
+              color: menu.color);
+        },
+      ),
+    );
+  }
+
+  Widget _buildMenuItem(
+      {required BuildContext context,
+      required String assetPath,
+      required String title,
+      required Widget destinationPage,
+      required Color color}) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (context) => destinationPage));
+      },
+      child: Container(
+        width: 100,
+        margin: const EdgeInsets.only(right: 15),
+        decoration:
+            BoxDecoration(color: color, borderRadius: BorderRadius.circular(5)),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              height: 81,
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Color(0xFF00712D),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
-              ),
-              child: const Column(
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(top: 35),
-                    child: Text(
-                      'Sistem Akademik',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
+            Image.asset(assetPath, width: 50, height: 50),
+            const SizedBox(height: 8),
+            Text(title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    fontFamily: 'Poppinsmedium',
+                    fontSize: 14,
+                    color: Colors.white,
+                    height: 1.1)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAnnouncementCard(BuildContext context, Pengumuman pengumuman) {
+    return GestureDetector(
+      onTap: () {
+        Get.to(() => DetailPengumumanPage(pengumuman: pengumuman));
+      },
+      child: Container(
+        width: double.infinity,
+        margin: const EdgeInsets.fromLTRB(
+            20, 0, 20, 15), // Jarak antar kartu pengumuman
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFFBE6),
+          borderRadius: BorderRadius.circular(10),
+          boxShadow: [
+            BoxShadow(
+                color: Colors.grey.withOpacity(0.2),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: const Offset(0, 3))
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(
+                    pengumuman.judul,
+                    style: const TextStyle(
                         fontFamily: 'Poppinsmedium',
                         fontSize: 16,
-                        color: Color(0xFFFFFFFF),
-                      ),
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 1),
-                    child: Text(
-                      'Universitas Malikussaleh',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'PoppinsRegular',
-                        fontSize: 12,
-                        color: Color(0xFFFFFFFF),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              width: double.infinity,
-              height: 82,
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFF9100),
-                borderRadius: BorderRadius.all(Radius.circular(10)),
-              ),
-              child: Row(
-                // mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  const Padding(
-                    padding: EdgeInsets.only(left: 13),
-                    child: Image(
-                      image: AssetImage('asset/image/profile.png'),
-                      width: 57,
-                      height: 57,
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 10, top: 13),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Selamat Datang',
-                          style: TextStyle(
-                            fontFamily: 'PoppinsRegular',
-                            fontSize: 12,
-                            color: Color(0xFFFFFFFF),
-                          ),
-                        ),
-                        Text(
-                          'Rizki',
-                          style: const TextStyle(
-                            fontFamily: 'Poppinsmedium',
-                            fontSize: 16,
-                            color: Color(0xFFFFFFFF),
-                          ),
-                        ),
-                        // Text(
-                        //   FirebaseAuth.instance.currentUser?.email
-                        //           ?.split('@')[0] ??
-                        //       'Tidak ada email',
-                        //   style: const TextStyle(
-                        //     fontFamily: 'Poppinsmedium',
-                        //     fontSize: 16,
-                        //     color: Color(0xFFFFFFFF),
-                        //   ),
-                        // ),
-                        const Text(
-                          '230199080',
-                          style: TextStyle(
-                            fontFamily: 'PoppinsRegular',
-                            fontSize: 12,
-                            color: Color(0xFFFFFFFF),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.only(left: 20),
-                child: Text(
-                  'Menu Akademik',
-                  style: TextStyle(
-                    fontFamily: 'Poppinsmedium',
-                    fontSize: 16,
-                    color: Color(0xFF00712D),
+                        color: Color(0xFF00712D),
+                        fontWeight: FontWeight.bold),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              ),
-            ),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const jadwalkuliah()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(
-                        left: 20,
-                        top: 9,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00712D),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image(
-                              image: AssetImage('asset/image/Vector.png'),
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 16),
-                            child: Text(
-                              'Jadwal \n Kuliah',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const bahankuliah()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(top: 9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF9100),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image(
-                              image: AssetImage('asset/image/School.png'),
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 15),
-                            child: Text(
-                              'Bahan \nKuliah',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const Transkipnilai()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(top: 9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00712D),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image(
-                              image: AssetImage('asset/image/Exam.png'),
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 15),
-                            child: Text(
-                              'Transkrip\nNilai',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const informasi()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(top: 9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF9100),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image(
-                              image: AssetImage('asset/image/Book Reading.png'),
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 15),
-                            child: Text(
-                              'Informasi\nMatakuliah',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const KrsMenu()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(top: 9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00712D),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image(
-                              image: AssetImage('asset/image/Ereader.png'),
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 0),
-                            child: Text(
-                              'Kartu\nRencana\nStudi',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const InfoKhs()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(top: 9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF9100),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image.asset(
-                              'asset/image/Knowledge Sharing.png',
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 15),
-                            child: Text(
-                              'Kartu Hasil\nStudi',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const Saran()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(top: 9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00712D),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image(
-                              image: AssetImage('asset/image/Info Popup.png'),
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 15),
-                            child: Text(
-                              'Kritik\nDan Saran',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(width: 15),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const Tagihan()));
-                    },
-                    child: Container(
-                      width: 100,
-                      height: 122,
-                      margin: const EdgeInsets.only(top: 9),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF9100),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                      ),
-                      child: const Column(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(top: 8),
-                            child: Image(
-                              image:
-                                  AssetImage('asset/image/Order Completed.png'),
-                              width: 60,
-                              height: 60,
-                            ),
-                          ),
-                          Padding(
-                            padding: EdgeInsets.only(top: 15),
-                            child: Text(
-                              'Tagihan\nUKT',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 14,
-                                color: Color(0xFFFFFFFF),
-                                height: 1.1,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 15,
-                  ),
-                  // Container(
-                  //   width: 100,
-                  //   height: 122,
-                  //   margin: const EdgeInsets.only(top: 9),
-                  //   decoration: const BoxDecoration(
-                  //     // color: Color(0xFFFF9100),
-                  //     gradient: LinearGradient(
-                  //         colors: [Color(0xffFF9100), Color(0xFF00712D)],
-                  //         begin: Alignment.topLeft,
-                  //         end: Alignment.bottomRight),
-                  //     borderRadius: BorderRadius.all(Radius.circular(5)),
-                  //   ),
-                  //   child: const Column(
-                  //     children: [
-                  //       Padding(
-                  //         padding: EdgeInsets.only(top: 8),
-                  //         child: Image(
-                  //           image:
-                  //               AssetImage('asset/image/Order Completed.png'),
-                  //           width: 60,
-                  //           height: 60,
-                  //         ),
-                  //       ),
-                  //       Padding(
-                  //         padding: EdgeInsets.only(top: 15),
-                  //         child: Text(
-                  //           'Tagihan\nUKT',
-                  //           textAlign: TextAlign.center,
-                  //           style: TextStyle(
-                  //             fontFamily: 'Poppinsmedium',
-                  //             fontSize: 14,
-                  //             color: Color(0xFFFFFFFF),
-                  //             height: 1.1,
-                  //           ),
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
-                ],
-              ),
-            ),
-            const Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.only(left: 20, top: 20),
-                child: Text(
-                  'Pengumuman',
-                  style: TextStyle(
-                    fontFamily: 'Poppinsmedium',
-                    fontSize: 16,
-                    color: Color(0xFF00712D),
-                  ),
+                const SizedBox(width: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                      color: const Color(0xFF00712D),
+                      borderRadius: BorderRadius.circular(5)),
+                  child: Text(pengumuman.kategori,
+                      style:
+                          const TextStyle(color: Colors.white, fontSize: 10)),
                 ),
-              ),
+              ],
             ),
-            const SizedBox(
-              height: 15,
+            const SizedBox(height: 4),
+            Text(
+              'Diterbitkan: ${DateFormat('d MMM y', 'id_ID').format(pengumuman.createdAt)}',
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
-            SingleChildScrollView(
-              scrollDirection: Axis.vertical,
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const pengumuman()));
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 165,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFFBE6),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(
-                                0x20000000), // Warna bayangan (hitam dengan transparansi)
-                            offset:
-                                Offset(0, 2), // Posisi bayangan (x: 0, y: 2)
-                            blurRadius:
-                                6, // Blur radius (semakin besar, semakin halus)
-                            spreadRadius: 1, // Spread radius (sebaran bayangan)
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 10, left: 10),
-                                child: Text(
-                                  'Judul Pengumuman',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 16,
-                                    color: Color(0xFF00712D),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 40,
-                                height: 25,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00712D),
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    topRight: Radius.circular(5),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 0, left: 10),
-                            child: Text(
-                              'Kategory',
-                              style: TextStyle(
-                                fontFamily: 'PoppinsRegular',
-                                fontSize: 12,
-                                color: Color(0x8000712D),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        left: 10, right: 10),
-                                    width: 5,
-                                    height: 100,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFFF9100),
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Text(
-                                        'Officia proident id laboris et do Lorem eu est amet fugiat. Aliquip in exercitation sunt anim excepteur. Quis proident aute mollit consequat magna ea ex esse anim Lorem quis ad ex.',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppinsmedium',
-                                          fontSize: 12,
-                                          color: Color(0x60000000),
-                                        ),
-                                        textAlign: TextAlign.justify,
-                                        maxLines: 8,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 15,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const pengumuman()));
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 165,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFFBE6),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(
-                                0x20000000), // Warna bayangan (hitam dengan transparansi)
-                            offset:
-                                Offset(0, 2), // Posisi bayangan (x: 0, y: 2)
-                            blurRadius:
-                                6, // Blur radius (semakin besar, semakin halus)
-                            spreadRadius: 1, // Spread radius (sebaran bayangan)
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 10, left: 10),
-                                child: Text(
-                                  'Judul Pengumuman',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 16,
-                                    color: Color(0xFF00712D),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 40,
-                                height: 25,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00712D),
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    topRight: Radius.circular(5),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 0, left: 10),
-                            child: Text(
-                              'Kategory',
-                              style: TextStyle(
-                                fontFamily: 'PoppinsRegular',
-                                fontSize: 12,
-                                color: Color(0x8000712D),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        left: 10, right: 10),
-                                    width: 5,
-                                    height: 100,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFFF9100),
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Text(
-                                        'Officia proident id laboris et do Lorem eu est amet fugiat. Aliquip in exercitation sunt anim excepteur. Quis proident aute mollit consequat magna ea ex esse anim Lorem quis ad ex.',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppinsmedium',
-                                          fontSize: 12,
-                                          color: Color(0x60000000),
-                                        ),
-                                        textAlign: TextAlign.justify,
-                                        maxLines: 8,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 15,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const pengumuman()));
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 165,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFFBE6),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(
-                                0x20000000), // Warna bayangan (hitam dengan transparansi)
-                            offset:
-                                Offset(0, 2), // Posisi bayangan (x: 0, y: 2)
-                            blurRadius:
-                                6, // Blur radius (semakin besar, semakin halus)
-                            spreadRadius: 1, // Spread radius (sebaran bayangan)
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 10, left: 10),
-                                child: Text(
-                                  'Judul Pengumuman',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 16,
-                                    color: Color(0xFF00712D),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 40,
-                                height: 25,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00712D),
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    topRight: Radius.circular(5),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 0, left: 10),
-                            child: Text(
-                              'Kategory',
-                              style: TextStyle(
-                                fontFamily: 'PoppinsRegular',
-                                fontSize: 12,
-                                color: Color(0x8000712D),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        left: 10, right: 10),
-                                    width: 5,
-                                    height: 100,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFFF9100),
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Text(
-                                        'Officia proident id laboris et do Lorem eu est amet fugiat. Aliquip in exercitation sunt anim excepteur. Quis proident aute mollit consequat magna ea ex esse anim Lorem quis ad ex.',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppinsmedium',
-                                          fontSize: 12,
-                                          color: Color(0x60000000),
-                                        ),
-                                        textAlign: TextAlign.justify,
-                                        maxLines: 8,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 15,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const pengumuman()));
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 165,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFFBE6),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(
-                                0x20000000), // Warna bayangan (hitam dengan transparansi)
-                            offset:
-                                Offset(0, 2), // Posisi bayangan (x: 0, y: 2)
-                            blurRadius:
-                                6, // Blur radius (semakin besar, semakin halus)
-                            spreadRadius: 1, // Spread radius (sebaran bayangan)
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 10, left: 10),
-                                child: Text(
-                                  'Judul Pengumuman',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 16,
-                                    color: Color(0xFF00712D),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 40,
-                                height: 25,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00712D),
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    topRight: Radius.circular(5),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 0, left: 10),
-                            child: Text(
-                              'Kategory',
-                              style: TextStyle(
-                                fontFamily: 'PoppinsRegular',
-                                fontSize: 12,
-                                color: Color(0x8000712D),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        left: 10, right: 10),
-                                    width: 5,
-                                    height: 100,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFFF9100),
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Text(
-                                        'Officia proident id laboris et do Lorem eu est amet fugiat. Aliquip in exercitation sunt anim excepteur. Quis proident aute mollit consequat magna ea ex esse anim Lorem quis ad ex.',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppinsmedium',
-                                          fontSize: 12,
-                                          color: Color(0x60000000),
-                                        ),
-                                        textAlign: TextAlign.justify,
-                                        maxLines: 8,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 15,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const pengumuman()));
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 165,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFFBE6),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(
-                                0x20000000), // Warna bayangan (hitam dengan transparansi)
-                            offset:
-                                Offset(0, 2), // Posisi bayangan (x: 0, y: 2)
-                            blurRadius:
-                                6, // Blur radius (semakin besar, semakin halus)
-                            spreadRadius: 1, // Spread radius (sebaran bayangan)
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 10, left: 10),
-                                child: Text(
-                                  'Judul Pengumuman',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 16,
-                                    color: Color(0xFF00712D),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 40,
-                                height: 25,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00712D),
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    topRight: Radius.circular(5),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 0, left: 10),
-                            child: Text(
-                              'Kategory',
-                              style: TextStyle(
-                                fontFamily: 'PoppinsRegular',
-                                fontSize: 12,
-                                color: Color(0x8000712D),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        left: 10, right: 10),
-                                    width: 5,
-                                    height: 100,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFFF9100),
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Text(
-                                        'Officia proident id laboris et do Lorem eu est amet fugiat. Aliquip in exercitation sunt anim excepteur. Quis proident aute mollit consequat magna ea ex esse anim Lorem quis ad ex.',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppinsmedium',
-                                          fontSize: 12,
-                                          color: Color(0x60000000),
-                                        ),
-                                        textAlign: TextAlign.justify,
-                                        maxLines: 8,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    height: 15,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const pengumuman()));
-                    },
-                    child: Container(
-                      width: double.infinity,
-                      height: 165,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFFBE6),
-                        borderRadius: BorderRadius.all(Radius.circular(5)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(
-                                0x20000000), // Warna bayangan (hitam dengan transparansi)
-                            offset:
-                                Offset(0, 2), // Posisi bayangan (x: 0, y: 2)
-                            blurRadius:
-                                6, // Blur radius (semakin besar, semakin halus)
-                            spreadRadius: 1, // Spread radius (sebaran bayangan)
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Padding(
-                                padding: EdgeInsets.only(top: 10, left: 10),
-                                child: Text(
-                                  'Judul Pengumuman',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 16,
-                                    color: Color(0xFF00712D),
-                                  ),
-                                ),
-                              ),
-                              Container(
-                                width: 40,
-                                height: 25,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF00712D),
-                                  borderRadius: BorderRadius.only(
-                                    bottomLeft: Radius.circular(10),
-                                    topRight: Radius.circular(5),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.only(top: 0, left: 10),
-                            child: Text(
-                              'Kategory',
-                              style: TextStyle(
-                                fontFamily: 'PoppinsRegular',
-                                fontSize: 12,
-                                color: Color(0x8000712D),
-                              ),
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    margin: const EdgeInsets.only(
-                                        left: 10, right: 10),
-                                    width: 5,
-                                    height: 100,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFFFF9100),
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5)),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 10),
-                                      child: Text(
-                                        'Officia proident id laboris et do Lorem eu est amet fugiat. Aliquip in exercitation sunt anim excepteur. Quis proident aute mollit consequat magna ea ex esse anim Lorem quis ad ex.',
-                                        style: TextStyle(
-                                          fontFamily: 'Poppinsmedium',
-                                          fontSize: 12,
-                                          color: Color(0x60000000),
-                                        ),
-                                        textAlign: TextAlign.justify,
-                                        maxLines: 8,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            const SizedBox(height: 8),
+            Text(
+              pengumuman.isi,
+              style: const TextStyle(
+                  fontFamily: 'PoppinsRegular',
+                  fontSize: 13,
+                  color: Colors.black87),
+              textAlign: TextAlign.justify,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        color: Color(0xFFFF9100),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 37),
-          child: Center(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (BuildContext) => const Pesan()));
-                  },
-                  child: Container(
-                    child: Image.asset('asset/image/Circled Envelope.png'),
-                  ),
-                ),
-                // SizedBox(
-                //   width: 68,
-                // ),
-                GestureDetector(
-                  onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(
-                        builder: (BuildContext) => const Homepage()));
-                  },
-                  child: Container(
-                    width: 56,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(15),
-                      color: Colors.white,
-                    ),
-                    child: Image.asset('asset/image/Home.png'),
-                  ),
-                ),
-                // SizedBox(
-                //   width: 62,
-                // ),
-                GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(
-                          builder: (BuildContext) => const infoakun()));
-                    },
-                    child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 5),
-                      child: Image.asset('asset/image/Male User.png'),
-                    )),
-              ],
-            ),
-          ),
-        ),
-        // child: Row(
-        //   mainAxisAlignment: MainAxisAlignment.center,
-        //   children: [
-        //     Wrap(
-        //       spacing: 65,
-        //       children: <Widget>[
-        //         GestureDetector(
-        //           onTap: () {
-        //             // Navigator.of(context).push(MaterialPageRoute(
-        //             //     builder: (BuildContext) => const Pesan()));
-        //           },
-        //           child: Container(
-        //             padding: EdgeInsets.symmetric(vertical: 5),
-        //             child: Image.asset('asset/image/Circled Envelope.png'),
-        //           ),
-        //         ),
-        //         Container(
-        //           padding: EdgeInsets.symmetric(vertical: 6),
-        //           width: 56,
-        //           height: 56,
-        //           decoration: BoxDecoration(
-        //             borderRadius: BorderRadius.circular(15),
-        //             color: Colors.white,
-        //           ),
-        //           child: Image.asset('asset/image/Home.png'),
-        //         ),
-        //         Container(
-        //           padding: EdgeInsets.symmetric(vertical: 5),
-        //           child: Image.asset('asset/image/Male User.png'),
-        //         )
-        //       ],
-        //     ),
-        //   ],
+    );
+  }
 
-        //   IconButton(
-        //     icon: Icon(Icons.home),
-        //     onPressed: () {},
-        //   ),
-        //   IconButton(
-        //     icon: Icon(Icons.notifications),
-        //     onPressed: () {},
-        //   ),
-        //   IconButton(
-        //     icon: Icon(Icons.person),
-        //     onPressed: () {},
-        //   ),
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    return BottomAppBar(
+      color: const Color(0xFFFF9100),
+      height: 60,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          _buildNavBarItem(
+              context, 'asset/image/Circled Envelope.png', const PesanPage()),
+          _buildNavBarItem(context, 'asset/image/Home.png', const Homepage(),
+              isCentral: true),
+          _buildNavBarItem(
+              context, 'asset/image/Male User.png', const InfoAkun()),
+        ],
       ),
+    );
+  }
+
+  Widget _buildNavBarItem(
+      BuildContext context, String assetPath, Widget destinationPage,
+      {bool isCentral = false}) {
+    return GestureDetector(
+      onTap: () {
+        if (isCentral) return;
+        Navigator.of(context)
+            .push(MaterialPageRoute(builder: (context) => destinationPage));
+      },
+      child: isCentral
+          ? Container(
+              width: 56,
+              height: 56,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(15),
+                boxShadow: [
+                  BoxShadow(
+                      color: Colors.black.withOpacity(0.15), blurRadius: 6)
+                ],
+              ),
+              child:
+                  Center(child: Image.asset(assetPath, width: 28, height: 28)),
+            )
+          : Image.asset(assetPath, width: 32, height: 32),
     );
   }
 }

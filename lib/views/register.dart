@@ -1,9 +1,11 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/views/homepage.dart';
+import 'package:flutter_application_1/api/api_service.dart';
+import 'package:flutter_application_1/models/dosen_model.dart';
+import 'package:flutter_application_1/models/program_studi_model.dart';
 import 'package:flutter_application_1/views/login2.dart';
 import 'package:get/get.dart';
 import 'package:flutter_application_1/app/controllers/auth_controller.dart';
+import 'package:intl/intl.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -13,262 +15,192 @@ class Register extends StatefulWidget {
 }
 
 class _RegisterState extends State<Register> {
-  TextEditingController cUser = TextEditingController();
-  TextEditingController cPass = TextEditingController();
-  TextEditingController cConfirmPass = TextEditingController();
-  TextEditingController cNIM = TextEditingController();
+  // Controllers for text fields
+  final TextEditingController cNama = TextEditingController();
+  final TextEditingController cNIM = TextEditingController();
+  final TextEditingController cEmail = TextEditingController();
+  final TextEditingController cNoHp = TextEditingController();
+  final TextEditingController cAlamat = TextEditingController();
+  final TextEditingController cAngkatan = TextEditingController();
+  final TextEditingController cPass = TextEditingController();
+  final TextEditingController cConfirmPass = TextEditingController();
+  final TextEditingController cTanggalLahir = TextEditingController();
+
+  // State for dropdowns and data loading
+  List<ProgramStudi> _programStudiList = [];
+  List<Dosen> _dosenList = [];
+  int? _selectedProdiId;
+  int? _selectedDosenId;
+  String? _selectedKelamin;
+  bool _isDataLoading = true;
+
   final formKey = GlobalKey<FormState>();
-  String _errorMessage = '';
-
   bool passToggle = true;
+  bool confirmPassToggle = true;
 
-  // Instance of AuthController
-  final authController = Get.put(AuthController());
+  // Get instances of controllers and services
+  final AuthController authController = Get.find<AuthController>();
+  final ApiService apiService = ApiService();
+
+  @override
+  void initState() {
+    super.initState();
+    // Panggil fungsi untuk mengambil data saat halaman pertama kali dibuka
+    _fetchInitialData();
+  }
+
+  /// Mengambil data Program Studi dan Dosen dari API
+  Future<void> _fetchInitialData() async {
+    try {
+      // Panggil kedua API secara bersamaan untuk efisiensi
+      final results = await Future.wait([
+        apiService.fetchProgramStudi(),
+        apiService.fetchDosen(),
+      ]);
+      setState(() {
+        _programStudiList = results[0] as List<ProgramStudi>;
+        _dosenList = results[1] as List<Dosen>;
+        _isDataLoading = false;
+      });
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Gagal memuat data registrasi: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
+      setState(() {
+        _isDataLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.of(context).pop();
-        return false;
-      },
-      child: Scaffold(
-          backgroundColor: const Color(0xFF00712D),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 60),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Image(
-                        image: AssetImage('asset/image/logo1.png'),
-                        width: 59,
-                        height: 77,
-                      ),
-                      const Text(
-                        'Sistem Akademik',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'PoppinsEkstraBold',
-                          fontSize: 15,
-                          color: Color(0xFFFFFFFF),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Form(
-                  key: formKey,
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Container(
-                      height: 800,
-                      width: double.infinity,
-                      decoration: const BoxDecoration(
-                        color: Color(0xffFFFBE6),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(30),
-                          topRight: Radius.circular(30),
-                        ),
-                      ),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            const Padding(
-                              padding: EdgeInsets.only(top: 10),
-                              child: Text(
-                                'Register',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontFamily: 'PoppinsEkstraBold',
-                                  fontSize: 24,
-                                  color: Color(0xFF00712D),
-                                ),
-                              ),
-                            ),
-                            // Pesan Error Global
-                            if (_errorMessage.isNotEmpty)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(horizontal: 20),
-                                child: Text(
-                                  _errorMessage,
-                                  style: const TextStyle(
-                                      color: Colors.red, fontSize: 14),
-                                ),
-                              ),
-
-                            // Input Email
-                            _buildInputField(
-                              label: 'Email',
-                              hint: 'Masukkan email',
-                              controller: cUser,
-                              icon: Icons.person,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Email tidak boleh kosong';
-                                }
-                                if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
-                                    .hasMatch(value)) {
-                                  return 'Format email tidak valid';
-                                }
-                                return null;
-                              },
-                            ),
-
-                            // Input NIM
-                            _buildInputField(
-                              label: 'NIM',
-                              hint: 'Masukkan NIM',
-                              controller: cNIM,
-                              icon: Icons.school,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'NIM tidak boleh kosong';
-                                }
-                                return null;
-                              },
-                            ),
-
-                            // Input Password
-                            _buildPasswordField(
-                              label: 'Password',
-                              hint: 'Masukkan password',
-                              controller: cPass,
-                            ),
-
-                            // Input Konfirmasi Password
-                            _buildPasswordField(
-                              label: 'Konfirmasi Password',
-                              hint: 'Masukkan konfirmasi password',
-                              controller: cConfirmPass,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Konfirmasi password tidak boleh kosong';
-                                }
-                                if (value != cPass.text) {
-                                  return 'Password tidak cocok';
-                                }
-                                return null;
-                              },
-                            ),
-
-                            // Tombol Register
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: ElevatedButton(
-                                onPressed: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    try {
-                                      await FirebaseAuth.instance
-                                          .createUserWithEmailAndPassword(
-                                        email: cUser.text.trim(),
-                                        password: cPass.text.trim(),
-                                      );
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content:
-                                                Text('Registrasi berhasil')),
-                                      );
-                                      Navigator.pop(context);
-                                    } on FirebaseAuthException catch (e) {
-                                      setState(() {
-                                        if (e.code == 'email-already-in-use') {
-                                          _errorMessage =
-                                              'Email sudah digunakan';
-                                        } else if (e.code == 'weak-password') {
-                                          _errorMessage =
-                                              'Password terlalu lemah';
-                                        } else {
-                                          _errorMessage =
-                                              'Registrasi gagal: ${e.message}';
-                                        }
-                                      });
-                                    }
-                                  }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFF9100),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  minimumSize: const Size(double.infinity, 53),
-                                ),
-                                child: const Text(
-                                  'Register',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 14,
-                                    color: Color(0xFFFFFFFF),
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            // Navigasi ke Login
-                            Align(
-                              alignment: Alignment.center,
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              const LoginTwo()));
-                                },
-                                child: const Padding(
-                                  padding: EdgeInsets.only(top: 20),
-                                  child: Text(
-                                    "Sudah punya akun? Login di sini",
-                                    style: TextStyle(
-                                      color: Color(0xFF00712D),
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              ],
-            ),
-          )),
+    return Scaffold(
+      backgroundColor: const Color(0xFF00712D),
+      body: Obx(() => authController.isLoading.value
+          ? const Center(child: CircularProgressIndicator(color: Colors.white))
+          : SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  _buildForm(),
+                ],
+              ),
+            )),
     );
   }
 
-  Widget buildInputField(
-      {required TextEditingController controller,
-      required String hintText,
-      required String labelText,
-      required IconData icon}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: BoxDecoration(
-        color: const Color(0x20005A24),
-        borderRadius: BorderRadius.circular(10),
+  Widget _buildHeader() {
+    return const Padding(
+      padding: EdgeInsets.only(top: 60, bottom: 10),
+      child: Column(
+        children: [
+          Image(image: AssetImage('asset/image/logo1.png'), width: 59, height: 77),
+          Text('Sistem Akademik', textAlign: TextAlign.center, style: TextStyle(fontFamily: 'PoppinsEkstraBold', fontSize: 15, color: Colors.white)),
+        ],
       ),
-      child: TextFormField(
-        controller: controller,
-        decoration: InputDecoration(
-          hintText: hintText,
-          labelText: labelText,
-          prefixIcon: Icon(icon, color: const Color(0xff00712D)),
-          border: InputBorder.none,
+    );
+  }
+
+  Widget _buildForm() {
+    return Form(
+      key: formKey,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+        decoration: const BoxDecoration(
+          color: Color(0xffFFFBE6),
+          borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
         ),
-        validator: (value) {
-          if (value == null || value.isEmpty) {
-            return '$labelText tidak boleh kosong';
-          }
-          return null;
+        // Tampilkan loading indicator jika data dropdown belum siap
+        child: _isDataLoading
+            ? const Center(child: Padding(padding: EdgeInsets.all(32.0), child: CircularProgressIndicator()))
+            : Column(
+                children: [
+                  const Text('Register', style: TextStyle(fontFamily: 'PoppinsEkstraBold', fontSize: 24, color: Color(0xFF00712D))),
+                  const SizedBox(height: 15),
+                  _buildInputField(label: 'Nama Lengkap', hint: 'Masukkan nama lengkap', controller: cNama, icon: Icons.person),
+                  _buildInputField(label: 'NIM', hint: 'Masukkan NIM', controller: cNIM, icon: Icons.badge, keyboardType: TextInputType.number),
+                  _buildInputField(label: 'Email', hint: 'Masukkan email', controller: cEmail, icon: Icons.email, keyboardType: TextInputType.emailAddress, validator: (value) {
+                    if (value == null || !GetUtils.isEmail(value)) return 'Format email tidak valid';
+                    return null;
+                  }),
+                  _buildProdiDropdown(), // Dropdown Program Studi
+                  _buildDosenDropdown(), // Dropdown Dosen PA
+                  _buildJenisKelaminDropdown(),
+                  _buildDateField(context),
+                  _buildInputField(label: 'No. HP', hint: 'Masukkan nomor HP', controller: cNoHp, icon: Icons.phone, keyboardType: TextInputType.phone),
+                  _buildInputField(label: 'Alamat', hint: 'Masukkan alamat', controller: cAlamat, icon: Icons.home),
+                  _buildInputField(label: 'Tahun Angkatan', hint: 'Contoh: 2023', controller: cAngkatan, icon: Icons.calendar_today, keyboardType: TextInputType.number),
+                  _buildPasswordField(label: 'Password', hint: 'Minimal 8 karakter', controller: cPass, isConfirmation: false),
+                  _buildPasswordField(label: 'Konfirmasi Password', hint: 'Ulangi password', controller: cConfirmPass, isConfirmation: true),
+                  const SizedBox(height: 25),
+                  _buildRegisterButton(),
+                  _buildLoginNavigation(context),
+                ],
+              ),
+      ),
+    );
+  }
+  
+  // Widget untuk dropdown Program Studi
+  Widget _buildProdiDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: DropdownButtonFormField<int>(
+        value: _selectedProdiId,
+        decoration: InputDecoration(
+          labelText: 'Program Studi',
+          prefixIcon: Icon(Icons.school, color: const Color(0xff00712D)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          fillColor: const Color(0x20005A24),
+          filled: true,
+        ),
+        isExpanded: true,
+        items: _programStudiList.map((prodi) {
+          return DropdownMenuItem(
+            value: prodi.id,
+            child: Text(prodi.namaProdi, overflow: TextOverflow.ellipsis),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedProdiId = value;
+          });
         },
+        validator: (value) => value == null ? 'Pilih program studi' : null,
+      ),
+    );
+  }
+
+  // Widget untuk dropdown Dosen
+  Widget _buildDosenDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: DropdownButtonFormField<int>(
+        value: _selectedDosenId,
+        decoration: InputDecoration(
+          labelText: 'Dosen Pembimbing Akademik',
+          prefixIcon: Icon(Icons.supervisor_account, color: const Color(0xff00712D)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          fillColor: const Color(0x20005A24),
+          filled: true,
+        ),
+        isExpanded: true,
+        items: _dosenList.map((dosen) {
+          return DropdownMenuItem(
+            value: dosen.id,
+            child: Text(dosen.nama, overflow: TextOverflow.ellipsis),
+          );
+        }).toList(),
+        onChanged: (value) {
+          setState(() {
+            _selectedDosenId = value;
+          });
+        },
+        validator: (value) => value == null ? 'Pilih dosen PA' : null,
       ),
     );
   }
@@ -278,116 +210,157 @@ class _RegisterState extends State<Register> {
     required String hint,
     required TextEditingController controller,
     required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20, top: 20),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'PoppinsRegular',
-              fontSize: 14,
-              color: Color(0xFF00712D),
-            ),
-          ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          prefixIcon: Icon(icon, color: const Color(0xff00712D)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          fillColor: const Color(0x20005A24),
+          filled: true,
         ),
-        Container(
-          width: double.infinity,
-          height: 53,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: const Color(0x20005A24),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: TextFormField(
-            controller: controller,
-            validator: validator,
-            decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-              border: InputBorder.none,
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0x8000712D),
-                fontSize: 14,
-              ),
-              prefixIcon: Icon(icon, color: const Color(0xff00712D)),
-            ),
-            style: const TextStyle(color: Colors.black),
-          ),
-        ),
-      ],
+        validator: validator ?? (value) {
+          if (value == null || value.isEmpty) return '$label tidak boleh kosong';
+          return null;
+        },
+      ),
     );
   }
 
-  // Widget untuk Password Field
+  Widget _buildJenisKelaminDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: DropdownButtonFormField<String>(
+        value: _selectedKelamin,
+        decoration: InputDecoration(
+          labelText: 'Jenis Kelamin',
+          prefixIcon: Icon(Icons.wc, color: const Color(0xff00712D)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          fillColor: const Color(0x20005A24),
+          filled: true,
+        ),
+        items: ['Laki-laki', 'Perempuan'].map((label) => DropdownMenuItem(child: Text(label), value: label)).toList(),
+        onChanged: (value) => setState(() => _selectedKelamin = value),
+        validator: (value) => value == null ? 'Pilih jenis kelamin' : null,
+      ),
+    );
+  }
+
+  Widget _buildDateField(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: TextFormField(
+        controller: cTanggalLahir,
+        readOnly: true,
+        decoration: InputDecoration(
+          labelText: 'Tanggal Lahir',
+          hintText: 'Pilih tanggal lahir',
+          prefixIcon: Icon(Icons.cake, color: const Color(0xff00712D)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          fillColor: const Color(0x20005A24),
+          filled: true,
+        ),
+        onTap: () async {
+          DateTime? pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.now(),
+            firstDate: DateTime(1980),
+            lastDate: DateTime.now(),
+          );
+          if (pickedDate != null) {
+            setState(() {
+              cTanggalLahir.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+            });
+          }
+        },
+        validator: (value) => (value == null || value.isEmpty) ? 'Pilih tanggal lahir' : null,
+      ),
+    );
+  }
+
   Widget _buildPasswordField({
     required String label,
     required String hint,
     required TextEditingController controller,
-    String? Function(String?)? validator,
+    required bool isConfirmation,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 20, top: 20),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontFamily: 'PoppinsRegular',
-              fontSize: 14,
-              color: Color(0xFF00712D),
-            ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: TextFormField(
+        controller: controller,
+        obscureText: isConfirmation ? confirmPassToggle : passToggle,
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          prefixIcon: const Icon(Icons.lock, color: Color(0xff00712D)),
+          suffixIcon: InkWell(
+            onTap: () => setState(() {
+              if (isConfirmation) {
+                confirmPassToggle = !confirmPassToggle;
+              } else {
+                passToggle = !passToggle;
+              }
+            }),
+            child: Icon((isConfirmation ? confirmPassToggle : passToggle) ? Icons.visibility_off : Icons.visibility, color: const Color(0xff00712D)),
           ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          fillColor: const Color(0x20005A24),
+          filled: true,
         ),
-        Container(
-          width: double.infinity,
-          height: 53,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
-          decoration: BoxDecoration(
-            color: const Color(0x20005A24),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: TextFormField(
-            controller: controller,
-            obscureText: passToggle,
-            validator: validator ??
-                (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Password tidak boleh kosong';
-                  }
-                  return null;
-                },
-            decoration: InputDecoration(
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 15, horizontal: 15),
-              border: InputBorder.none,
-              hintText: hint,
-              hintStyle: const TextStyle(
-                color: Color(0x8000712D),
-                fontSize: 14,
-              ),
-              prefixIcon: const Icon(Icons.lock, color: Color(0xff00712D)),
-              suffixIcon: InkWell(
-                onTap: () {
-                  setState(() {
-                    passToggle = !passToggle;
-                  });
-                },
-                child: Icon(
-                  passToggle ? Icons.visibility : Icons.visibility_off,
-                  color: const Color(0xff00712D),
-                ),
-              ),
-            ),
-            style: const TextStyle(color: Colors.black),
-          ),
-        ),
-      ],
+        validator: (value) {
+          if (value == null || value.isEmpty) return '$label tidak boleh kosong';
+          if (isConfirmation && value != cPass.text) return 'Password tidak cocok';
+          if (!isConfirmation && value.length < 8) return 'Password minimal 8 karakter';
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _buildRegisterButton() {
+    return SizedBox(
+      width: double.infinity,
+      height: 53,
+      child: ElevatedButton(
+        onPressed: () {
+          if (formKey.currentState!.validate()) {
+            Map<String, String> data = {
+              'nama': cNama.text,
+              'nim': cNIM.text,
+              'email': cEmail.text,
+              'password': cPass.text,
+              'password_confirmation': cConfirmPass.text,
+              'jenis_kelamin': _selectedKelamin!,
+              'no_hp': cNoHp.text,
+              'alamat': cAlamat.text,
+              'tanggal_lahir': cTanggalLahir.text,
+              'angkatan': cAngkatan.text,
+              'program_studi_id': _selectedProdiId.toString(),
+              'dosen_id': _selectedDosenId.toString(),
+            };
+            authController.register(data);
+          }
+        },
+        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFF9100), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+        child: const Text('Register', style: TextStyle(fontSize: 16, color: Colors.white)),
+      ),
+    );
+  }
+
+  Widget _buildLoginNavigation(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 20.0),
+      child: GestureDetector(
+        onTap: () => Get.off(() => const LoginTwo()),
+        child: const Text("Sudah punya akun? Login di sini", style: TextStyle(color: Color(0xFF00712D), fontSize: 14)),
+      ),
     );
   }
 }

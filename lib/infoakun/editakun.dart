@@ -1,8 +1,10 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/infoakun/datadiri.dart';
+import 'package:flutter_application_1/app/controllers/auth_controller.dart';
 import 'package:flutter_application_1/utils/color.dart';
+import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 
 class EditAkun extends StatefulWidget {
   const EditAkun({super.key});
@@ -12,625 +14,259 @@ class EditAkun extends StatefulWidget {
 }
 
 class _EditAkunState extends State<EditAkun> {
-  final _textController = TextEditingController();
+  final AuthController authController = Get.find();
+  final _formKey = GlobalKey<FormState>();
 
-  void _changeEmail() async {
-    final FirebaseAuth _auth = FirebaseAuth.instance;
-    User? user = _auth.currentUser;
+  // Controllers untuk setiap field yang bisa diedit
+  late TextEditingController _namaController;
+  late TextEditingController _emailController;
+  late TextEditingController _noHpController;
+  late TextEditingController _alamatController;
+  late TextEditingController _angkatanController;
+  late TextEditingController _tanggalLahirController;
 
-    if (user != null) {
-      try {
-        // Lakukan otentikasi ulang dengan kredensial pengguna
-        final String email = user.email!;
-        final String password =
-            '123456'; // Anda bisa meminta pengguna untuk memasukkan password
+  String? _selectedKelamin;
+  File? _selectedImage;
 
-        // Membuat kredensial pengguna
-        AuthCredential credential =
-            EmailAuthProvider.credential(email: email, password: password);
+  @override
+  void initState() {
+    super.initState();
+    // Isi semua controller dengan data user saat ini
+    final user = authController.currentUser.value;
+    _namaController = TextEditingController(text: user?.nama ?? '');
+    _emailController = TextEditingController(text: user?.email ?? '');
+    _noHpController = TextEditingController(text: user?.noHp ?? '');
+    _alamatController = TextEditingController(text: user?.alamat ?? '');
+    _angkatanController = TextEditingController(text: user?.angkatan?.toString() ?? '');
+    _tanggalLahirController = TextEditingController(text: user?.tanggalLahir ?? '');
+    _selectedKelamin = user?.jenisKelamin;
+  }
 
-        // Lakukan re-authentication
-        await user.reauthenticateWithCredential(credential);
-        print("User re-authenticated");
+  @override
+  void dispose() {
+    _namaController.dispose();
+    _emailController.dispose();
+    _noHpController.dispose();
+    _alamatController.dispose();
+    _angkatanController.dispose();
+    _tanggalLahirController.dispose();
+    super.dispose();
+  }
 
-        // Sekarang Anda bisa mengupdate email setelah otentikasi ulang
-        await user.verifyBeforeUpdateEmail(_textController.text);
-        print("Verification email sent to ${_textController.text}");
-        showDialog(
-            context: context,
-            builder: (BuildContext) {
-              return Alert();
-            });
-      } on FirebaseAuthException catch (e) {
-        print("Error during re-authentication or email update: ${e.message}");
-      }
-    } else {
-      print("User is not logged in");
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery, imageQuality: 80);
+
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
+
+  void _submitUpdate() {
+    if (_formKey.currentState!.validate()) {
+      Map<String, String> data = {
+        'nama': _namaController.text,
+        'email': _emailController.text,
+        'no_hp': _noHpController.text,
+        'alamat': _alamatController.text,
+        'jenis_kelamin': _selectedKelamin!,
+        'tanggal_lahir': _tanggalLahirController.text,
+        'angkatan': _angkatanController.text,
+      };
+      authController.updateProfile(data: data, foto: _selectedImage);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.of(context).pop();
-        return false;
-      },
-      child: Scaffold(
-        backgroundColor: bgcolor,
-        appBar: PreferredSize(
-            preferredSize: Size.fromHeight(80),
-            child: ClipRRect(
-              borderRadius: BorderRadius.vertical(bottom: Radius.circular(15)),
-              child: AppBar(
-                backgroundColor: greencolor,
-                automaticallyImplyLeading: false,
-                flexibleSpace: Padding(
-                  padding: EdgeInsets.only(top: 50),
-                  child: Column(
-                    children: [
-                      Text(
-                        "Informasi Akun",
-                        style: TextStyle(
-                            fontFamily: 'PoppinsBold',
-                            fontSize: 25,
-                            color: whitecolor),
-                      ),
-                      Text(
-                        "Universitas Malikussaleh",
-                        style: TextStyle(
-                            fontFamily: 'PoppinsRegular',
-                            fontSize: 14,
-                            color: whitecolor),
-                      )
-                    ],
-                  ),
+    return Scaffold(
+      backgroundColor: bgcolor,
+      appBar: _buildAppBar(),
+      body: Obx(() => authController.isLoading.value
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildImagePicker(),
+                    const SizedBox(height: 30),
+                    _buildTextField(controller: _namaController, label: "Nama Lengkap", icon: Icons.person),
+                    _buildReadOnlyField(label: "NIM", value: authController.currentUser.value?.nim ?? ''),
+                    _buildTextField(controller: _emailController, label: "Email", icon: Icons.email, keyboardType: TextInputType.emailAddress),
+                    _buildJenisKelaminDropdown(),
+                    _buildDateField(),
+                    _buildTextField(controller: _noHpController, label: "No. HP", icon: Icons.phone, keyboardType: TextInputType.phone),
+                    _buildTextField(controller: _alamatController, label: "Alamat", icon: Icons.home, maxLines: 3),
+                    _buildTextField(controller: _angkatanController, label: "Tahun Angkatan", icon: Icons.calendar_today, keyboardType: TextInputType.number),
+                    _buildReadOnlyField(label: "Program Studi", value: authController.currentUser.value?.programStudi?.namaProdi ?? 'Tidak diketahui'),
+                    _buildReadOnlyField(label: "Dosen PA", value: authController.currentUser.value?.dosen?.nama ?? 'Tidak diketahui'),
+                    const SizedBox(height: 30),
+                  ],
                 ),
               ),
             )),
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 20, top: 10),
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Text(
-                      "< Kembali",
-                      style: TextStyle(
-                          fontFamily: 'PoppinsBold',
-                          fontSize: 20,
-                          color: Colors.black),
-                    ),
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(top: 20),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 167,
-                          height: 167,
-                          decoration: BoxDecoration(
-                              shape: BoxShape.rectangle,
-                              image: DecorationImage(
-                                image: AssetImage('asset/image/profile.png'),
-                                fit: BoxFit.cover,
-                              ),
-                              border: Border.all(color: orangecolor, width: 5),
-                              borderRadius: BorderRadius.circular(20)
-                              // boxShadow: [
-                              //   BoxShadow(
-                              //     color: Colors.black.withOpacity(0.2),
-                              //     spreadRadius: 5,
-                              //     blurRadius: 10,
-                              //     offset: const Offset(0, 5),
-                              //   ),
-                              // ],
-                              ),
-                        ),
-                        Positioned(
-                          bottom: -20,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              // Aksi untuk mengedit foto
-                            },
-                            child: const Icon(Icons.add_a_photo_rounded),
-                            style: ElevatedButton.styleFrom(
-                                shape: CircleBorder(),
-                                padding: EdgeInsets.all(5),
-                                minimumSize: Size(104, 104)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                height: 20,
-              ),
-              SingleChildScrollView(
-                scrollDirection: Axis.vertical,
-                child: Column(
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("Email",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: TextField(
-                              controller: _textController,
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              ),
-                              decoration: InputDecoration(
-                                hintText:
-                                    FirebaseAuth.instance.currentUser?.email ??
-                                        'Tidak ada email',
-                                hintStyle: TextStyle(
-                                  fontFamily: 'Poppinssemibold',
-                                  fontSize: 16,
-                                ),
-                                border: InputBorder.none,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("Nama",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: Text("TEs",
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("NIM",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: Text("230180222",
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("Fakultas",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: Text("TEKNIK",
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("Prodi",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: Text("Sistem Informasi",
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("Tempat Lahir",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: Text("saturnus",
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("Tanggal Lahir",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: Text("12 Desember 2023",
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Padding(
-                          padding: const EdgeInsets.only(left: 20),
-                          child: Text("Alamat",
-                              style: TextStyle(
-                                fontFamily: 'Poppinsmedium',
-                                fontSize: 16,
-                              ))),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 45,
-                      margin: const EdgeInsets.symmetric(horizontal: 20),
-                      decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10),
-                          boxShadow: [
-                            BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                spreadRadius: 0,
-                                blurRadius: 4,
-                                offset: Offset(2, 2))
-                          ],
-                          color: whitecolor),
-                      child: Align(
-                        alignment: Alignment.bottomLeft,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 10, horizontal: 30),
-                          child: Text("Lhokseumawe",
-                              style: TextStyle(
-                                fontFamily: 'Poppinssemibold',
-                                fontSize: 16,
-                              )),
-                        ),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 5,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
+      bottomNavigationBar: _buildSaveButton(),
+    );
+  }
 
-        bottomNavigationBar: BottomAppBar(
-          color: Colors.white.withOpacity(0.30),
-          child: GestureDetector(
-            onTap: () {
-              // Aksi untuk menyimpan data
-              // _changeEmail();
-              showDialog(
-                  context: context,
-                  builder: (BuildContext) {
-                    return Alert();
-                  });
-            },
-            child: Center(
-              child: Container(
-                width: double.infinity,
-                height: 65,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
-                    color: const Color.fromARGB(255, 2, 93, 168)),
-                child: Center(
-                  child: Text(
-                    "Simpan",
-                    style: TextStyle(
-                        fontFamily: 'Poppinssemibold',
-                        fontSize: 25,
-                        color: whitecolor),
-                  ),
-                ),
+  Widget _buildImagePicker() {
+    final user = authController.currentUser.value;
+    return Center(
+      child: Stack(
+        children: [
+          CircleAvatar(
+            radius: 70,
+            backgroundColor: Colors.grey.shade300,
+            backgroundImage: _selectedImage != null
+                ? FileImage(_selectedImage!)
+                : (user?.fotoUrl != null && user!.fotoUrl!.isNotEmpty)
+                    ? NetworkImage(user.fotoUrl!)
+                    : const AssetImage('asset/image/profile.png') as ImageProvider,
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: CircleAvatar(
+              backgroundColor: orangecolor,
+              radius: 22,
+              child: IconButton(
+                icon: const Icon(Icons.camera_alt, color: Colors.white, size: 22),
+                onPressed: _pickImage,
               ),
             ),
           ),
-        ),
-        // bottomSheet: Container(
-        //   width: double.infinity,
-        //   height: 53,
-        //   margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 23),
-        //   decoration: BoxDecoration(
-        //       borderRadius: BorderRadius.circular(10),
-        //       color: const Color.fromARGB(255, 2, 128, 231),
-        //       boxShadow: [
-        //         BoxShadow(
-        //             color: Colors.black.withOpacity(0.5),
-        //             spreadRadius: 0,
-        //             blurRadius: 4,
-        //             offset: Offset(4, 4))
-        //       ]),
-        //   child: Center(
-        //     child: Text(
-        //       "Simpan",
-        //       style: TextStyle(
-        //           fontFamily: 'Poppinssemibold', fontSize: 25, color: whitecolor),
-        //     ),
-        //   ),
-        // ),
+        ],
       ),
     );
   }
-}
 
-// untuk membuat alert dialog
-class Alert extends StatefulWidget {
-  const Alert({super.key});
+  Widget _buildTextField({required TextEditingController controller, required String label, required IconData icon, TextInputType? keyboardType, int? maxLines = 1}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextFormField(
+        controller: controller,
+        keyboardType: keyboardType,
+        maxLines: maxLines,
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: greencolor),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: whitecolor,
+        ),
+        validator: (value) {
+          if ((label == 'Nama Lengkap' || label == 'Email') && (value == null || value.isEmpty)) {
+            return '$label tidak boleh kosong';
+          }
+          if (label == 'Email' && value != null && !GetUtils.isEmail(value)) {
+            return 'Format email tidak valid';
+          }
+          return null;
+        },
+      ),
+    );
+  }
 
-  @override
-  State<Alert> createState() => _AlertState();
-}
+  Widget _buildJenisKelaminDropdown() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: DropdownButtonFormField<String>(
+        value: _selectedKelamin,
+        decoration: InputDecoration(
+          labelText: 'Jenis Kelamin',
+          prefixIcon: Icon(Icons.wc, color: greencolor),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: whitecolor,
+        ),
+        items: ['Laki-laki', 'Perempuan'].map((label) => DropdownMenuItem(value: label, child: Text(label))).toList(),
+        onChanged: (value) => setState(() => _selectedKelamin = value),
+        validator: (value) => value == null ? 'Pilih jenis kelamin' : null,
+      ),
+    );
+  }
 
-class _AlertState extends State<Alert> {
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Center(
-        child: Text(
-          "Datadiri Berhasil Diubah",
-          style: TextStyle(
-            fontFamily: 'Poppinsmedium', // Font style
-            fontSize: 18, // Ukuran font
-            fontWeight: FontWeight.bold, // Menebalkan teks
-            color: Color(0x50000000), // Warna teks
-          ),
+  Widget _buildDateField() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: TextFormField(
+        controller: _tanggalLahirController,
+        readOnly: true,
+        decoration: InputDecoration(
+          labelText: 'Tanggal Lahir',
+          prefixIcon: Icon(Icons.cake, color: greencolor),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: whitecolor,
+        ),
+        onTap: () async {
+          DateTime? pickedDate = await showDatePicker(
+            context: context,
+            initialDate: DateTime.tryParse(_tanggalLahirController.text) ?? DateTime(2000),
+            firstDate: DateTime(1980),
+            lastDate: DateTime.now(),
+          );
+          if (pickedDate != null) {
+            setState(() {
+              _tanggalLahirController.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+            });
+          }
+        },
+        validator: (value) => (value == null || value.isEmpty) ? 'Tanggal lahir tidak boleh kosong' : null,
+      ),
+    );
+  }
+
+  Widget _buildReadOnlyField({required String label, required String value}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15.0),
+      child: TextFormField(
+        initialValue: value,
+        readOnly: true,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Colors.grey[600]),
+          prefixIcon: Icon(Icons.school_outlined, color: Colors.grey[400]),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+          filled: true,
+          fillColor: Colors.grey[200],
         ),
       ),
-      content: Icon(
-        Icons.beenhere_rounded,
-        size: 71,
-        color: Color(0xff4D4C50),
+    );
+  }
+
+  Widget _buildSaveButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: SizedBox(
+        width: double.infinity,
+        height: 56,
+        child: ElevatedButton(
+          onPressed: _submitUpdate,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color.fromARGB(255, 2, 93, 168),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          child: const Text('Simpan Perubahan', style: TextStyle(fontFamily: 'Poppinssemibold', fontSize: 18, color: Colors.white)),
+        ),
       ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      actions: [
-        TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: Container(
-                width: double.infinity,
-                height: 48,
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(5),
-                    color: Color(0xff1400FF)),
-                child: Center(
-                    child: Text(
-                  "Oke",
-                  style: TextStyle(
-                      fontFamily: 'Poppinsmedium',
-                      fontSize: 14,
-                      color: whitecolor),
-                ))))
-      ],
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      elevation: 0,
+      backgroundColor: greencolor,
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => Get.back(),
+      ),
+      title: const Text("Edit Data Diri", style: TextStyle(fontFamily: 'PoppinsBold', fontSize: 22, color: Colors.white)),
+      centerTitle: true,
     );
   }
 }
