@@ -47,6 +47,14 @@ class DetailPengumumanPage extends StatelessWidget {
                 fontFamily: 'PoppinsRegular'
               ),
             ),
+            const SizedBox(height: 16),
+            if (pengumuman.fotoUrl != null && pengumuman.fotoUrl!.isNotEmpty)
+              Image.network(
+                pengumuman.fotoUrl!,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: 200,
+              ),
           ],
         ),
       ),

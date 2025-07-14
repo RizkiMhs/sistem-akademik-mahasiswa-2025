@@ -701,61 +701,9 @@ class _LoginTwoState extends State<LoginTwo> {
                             const SizedBox(
                               height: 20,
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                      builder: (context) => LupaPassword()),
-                                );
-                              },
-                              child: Padding(
-                                padding: const EdgeInsets.only(right: 10),
-                                child: Align(
-                                  alignment: Alignment.centerRight,
-                                  child: Text(
-                                    'Lupa Password?',
-                                    style: TextStyle(
-                                      fontFamily: 'PoppinsBold',
-                                      fontSize: 14,
-                                      color: greencolor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(
-                              height: 20,
-                            ),
+                            
                             // Login with Google Button (Logika diubah)
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 20),
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  // Logika untuk Google Sign-In dengan backend Laravel berbeda.
-                                  // Anda perlu mengirim token dari Google ke server Anda.
-                                  // Untuk saat ini, kita tampilkan pesan bahwa fitur belum siap.
-                                  Get.snackbar("Fitur Belum Tersedia",
-                                      "Login dengan Google sedang dalam pengembangan.");
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFFF9100),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  minimumSize: const Size(double.infinity, 53),
-                                ),
-                                child: const Text(
-                                  'Login with Google',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppinsmedium',
-                                    fontSize: 14,
-                                    color: Color(0xFFFFFFFF),
-                                  ),
-                                ),
-                              ),
-                            ),
+                           
                           ],
                         ),
                       ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/bimbingan/detail_bimbingan.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart'; // Tambahkan package ini: flutter pub add intl
 import 'package:flutter_application_1/app/controllers/mahasiswa_bimbingan_controller.dart';
@@ -12,12 +13,14 @@ class BimbinganHistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Inisialisasi controller saat halaman pertama kali dibuka
-    final MahasiswaBimbinganController controller = Get.put(MahasiswaBimbinganController());
+    final MahasiswaBimbinganController controller =
+        Get.put(MahasiswaBimbinganController());
 
     return Scaffold(
       backgroundColor: bgcolor,
       appBar: AppBar(
-        title: const Text("Riwayat Bimbingan", style: TextStyle(color: Colors.white)),
+        title: const Text("Riwayat Bimbingan",
+            style: TextStyle(color: Colors.white)),
         backgroundColor: greencolor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -56,27 +59,34 @@ class BimbinganHistoryPage extends StatelessWidget {
 
   // Widget untuk menampilkan setiap item bimbingan dalam bentuk Card
   Widget _buildBimbinganCard(Bimbingan bimbingan) {
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        title: Text(
-          bimbingan.topik,
-          style: const TextStyle(fontWeight: FontWeight.bold),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
+    return GestureDetector(
+      onTap: () {
+        // Arahkan ke halaman detail bimbingan jika diperlukan
+        Get.to(() => DetailBimbinganPage(bimbingan: bimbingan));
+      },
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: Text(
-            "Tgl: ${DateFormat('d MMMM yyyy', 'id_ID').format(bimbingan.tanggalBimbingan)}\nDosen: ${bimbingan.dosen?.nama ?? '-'}",
+        child: ListTile(
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          title: Text(
+            bimbingan.topik,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
           ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: Text(
+              "Tgl: ${DateFormat('d MMMM yyyy', 'id_ID').format(bimbingan.tanggalBimbingan)}\nDosen: ${bimbingan.dosen?.nama ?? '-'}",
+            ),
+          ),
+          trailing: _buildStatusChip(bimbingan.status),
         ),
-        trailing: _buildStatusChip(bimbingan.status),
       ),
     );
   }
@@ -95,6 +105,10 @@ class BimbinganHistoryPage extends StatelessWidget {
         chipColor = Colors.red;
         statusText = 'Dibatalkan';
         break;
+      case 'terjadwal':
+        chipColor = Colors.blue;
+        statusText = 'Terjadwal';
+        break;
       default:
         chipColor = Colors.orange;
         statusText = 'Diajukan';
@@ -103,14 +117,14 @@ class BimbinganHistoryPage extends StatelessWidget {
     return Chip(
       label: Text(
         statusText,
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        style:
+            const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
       ),
       backgroundColor: chipColor,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     );
   }
 }
-
 
 // Halaman 2: Form untuk Mengajukan Bimbingan Baru
 class BimbinganFormPage extends StatefulWidget {
@@ -135,7 +149,7 @@ class _BimbinganFormPageState extends State<BimbinganFormPage> {
     _catatanController.dispose();
     super.dispose();
   }
-  
+
   // Fungsi untuk menampilkan date picker
   Future<void> _pickDate() async {
     DateTime? pickedDate = await showDatePicker(
@@ -173,7 +187,8 @@ class _BimbinganFormPageState extends State<BimbinganFormPage> {
     return Scaffold(
       backgroundColor: bgcolor,
       appBar: AppBar(
-        title: const Text("Ajukan Bimbingan", style: TextStyle(color: Colors.white)),
+        title: const Text("Ajukan Bimbingan",
+            style: TextStyle(color: Colors.white)),
         backgroundColor: greencolor,
         iconTheme: const IconThemeData(color: Colors.white),
       ),

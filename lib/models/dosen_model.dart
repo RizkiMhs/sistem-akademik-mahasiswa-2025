@@ -12,6 +12,7 @@ class Dosen {
   final String? noHp;
   final String? tanggalLahir;
   final int? programStudiId;
+  final String? fotoUrl;
 
   Dosen({
     required this.id,
@@ -23,6 +24,8 @@ class Dosen {
     this.noHp,
     this.tanggalLahir,
     this.programStudiId,
+    this.fotoUrl,
+
   });
 
   /// Factory constructor untuk membuat objek Dosen dari data JSON.
@@ -37,6 +40,7 @@ class Dosen {
       noHp: json['no_hp'],
       tanggalLahir: json['tanggal_lahir'],
       programStudiId: json['program_studi_id'],
+      fotoUrl: json['foto_url'],
     );
   }
 }

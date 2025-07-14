@@ -12,7 +12,7 @@ import 'dart:io'; // Untuk File
 class ApiService {
   // Ganti dengan URL base API Laravel Anda
   final String _baseUrl =
-      "http://192.168.1.16:8000/api"; // 10.0.2.2 adalah localhost untuk emulator Android
+      "http://192.168.100.11:8000/api"; // 10.0.2.2 adalah localhost untuk emulator Android
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
@@ -234,11 +234,14 @@ class ApiService {
     if (response.statusCode == 200) {
       final dynamic decodedJson = jsonDecode(response.body);
       // Asumsi Laravel Resource membungkus data dalam key 'data'
-      if (decodedJson is Map<String, dynamic> && decodedJson.containsKey('data')) {
+      if (decodedJson is Map<String, dynamic> &&
+          decodedJson.containsKey('data')) {
         final List<dynamic> body = decodedJson['data'];
         return body.map((dynamic item) => MataKuliah.fromJson(item)).toList();
       } else if (decodedJson is List) {
-        return decodedJson.map((dynamic item) => MataKuliah.fromJson(item)).toList();
+        return decodedJson
+            .map((dynamic item) => MataKuliah.fromJson(item))
+            .toList();
       } else {
         throw Exception('Format respons API mata kuliah tidak dikenali.');
       }
@@ -247,8 +250,7 @@ class ApiService {
     }
   }
 
-
-    /// Mengambil data penawaran KRS dari server.
+  /// Mengambil data penawaran KRS dari server.
   Future<Map<String, dynamic>> getPenawaranKrs(String token) async {
     final response = await http.get(
       Uri.parse('$_baseUrl/krs/penawaran'),
@@ -264,8 +266,10 @@ class ApiService {
       throw Exception('Gagal memuat data penawaran KRS.');
     }
   }
+
   /// Mengirim data KRS yang dipilih ke server untuk disimpan.
-  Future<Map<String, dynamic>> simpanKrs(String token, List<int> jadwalIds) async {
+  Future<Map<String, dynamic>> simpanKrs(
+      String token, List<int> jadwalIds) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/krs/simpan'),
       headers: {
@@ -277,9 +281,10 @@ class ApiService {
         'jadwal_ids': jadwalIds,
       }),
     );
-    
+
     final responseData = jsonDecode(response.body);
-    if (response.statusCode == 201) { // 201 Created
+    if (response.statusCode == 201) {
+      // 201 Created
       return responseData;
     } else {
       throw Exception(responseData['message'] ?? 'Gagal menyimpan KRS.');
@@ -361,11 +366,12 @@ class ApiService {
       return jsonDecode(response.body);
     } else {
       final responseData = jsonDecode(response.body);
-      throw Exception(responseData['message'] ?? 'Gagal memuat transkrip nilai.');
+      throw Exception(
+          responseData['message'] ?? 'Gagal memuat transkrip nilai.');
     }
   }
 
-   // --- FUNGSI BARU UNTUK FITUR BIMBINGAN ---
+  // --- FUNGSI BARU UNTUK FITUR BIMBINGAN ---
 
   /// Mengambil riwayat bimbingan dari mahasiswa yang sedang login.
   Future<Map<String, dynamic>> getBimbinganMahasiswa(String token) async {
@@ -376,12 +382,13 @@ class ApiService {
         'Authorization': 'Bearer $token',
       },
     );
-    
+
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
       final responseData = jsonDecode(response.body);
-      throw Exception(responseData['message'] ?? 'Gagal memuat riwayat bimbingan.');
+      throw Exception(
+          responseData['message'] ?? 'Gagal memuat riwayat bimbingan.');
     }
   }
 
@@ -407,7 +414,8 @@ class ApiService {
     );
 
     final responseData = jsonDecode(response.body);
-    if (response.statusCode == 201) { // 201 Created
+    if (response.statusCode == 201) {
+      // 201 Created
       return responseData;
     } else {
       // [FIXED] Tambahkan penanganan untuk error validasi (422)

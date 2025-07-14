@@ -7,6 +7,8 @@ class Pengumuman {
     final String judul;
     final String isi;
     final String kategori;
+    final String? foto;
+    final String? fotoUrl;
     final DateTime createdAt;
   
     Pengumuman({
@@ -14,6 +16,8 @@ class Pengumuman {
         required this.judul,
         required this.isi,
         required this.kategori,
+        this.foto,
+        this.fotoUrl,
         required this.createdAt,
     });
 
@@ -22,6 +26,8 @@ class Pengumuman {
         judul: json["judul"],
         isi: json["isi"],
         kategori: json["kategori"] ?? "Umum",
+        foto: json["foto"],
+        fotoUrl: json["foto_url"],
         createdAt: DateTime.parse(json["created_at"]),
     );
 }

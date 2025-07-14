@@ -1,148 +1,136 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:flutter_application_1/app/controllers/auth_controller.dart';
-import 'package:flutter_application_1/info/chat_page.dart'; // [PENTING] Ganti dengan path ChatPage Anda
+import 'package:flutter_application_1/app/controllers/dosen_controller.dart';
+import 'package:flutter_application_1/info/chat_page.dart';
 import 'package:flutter_application_1/infoakun/infoakun.dart';
+import 'package:flutter_application_1/models/dosen_model.dart';
 import 'package:flutter_application_1/utils/color.dart';
 import 'package:flutter_application_1/views/homepage.dart';
 
-class PesanPage extends StatefulWidget {
+class PesanPage extends StatelessWidget {
   const PesanPage({super.key});
 
   @override
-  State<PesanPage> createState() => _PesanPageState();
-}
-
-class _PesanPageState extends State<PesanPage> {
-  // Ambil instance AuthController yang sudah ada
-  final AuthController authController = Get.find();
-
-  @override
   Widget build(BuildContext context) {
-    // Ambil data dosen dari controller
-    final dosen = authController.currentUser.value?.dosen;
+    // Inisialisasi kedua controller
+    final AuthController authController = Get.find();
+    final DosenController dosenController = Get.put(DosenController());
+    final dosenPA = authController.currentUser.value?.dosen;
 
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(90),
-        child: ClipRRect(
-          borderRadius:
-              const BorderRadius.vertical(bottom: Radius.circular(15)),
-          child: AppBar(
-            backgroundColor: greencolor,
-            automaticallyImplyLeading: false,
-            flexibleSpace: const Padding(
-              padding: EdgeInsets.only(top: 60),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    "Pesan",
-                    style: TextStyle(
-                        fontFamily: 'PoppinsBold',
-                        fontSize: 25,
-                        color: Color(0xFFFFFFFF)),
-                  ),
-                  Padding(
-                    padding: EdgeInsets.only(top: 0),
-                    child: Text(
-                      "Universitas Malikussaleh",
-                      style: TextStyle(
-                          fontFamily: 'PoppinsRegular',
-                          fontSize: 14,
-                          color: Color(0xFFFFFFFF)),
-                    ),
-                  )
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
+      backgroundColor: bgcolor,
+      appBar: _buildAppBar(),
+      body: Obx(() {
+        if (dosenController.isLoading.value) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // Filter daftar dosen untuk menghilangkan DPA (jika ada) dari daftar umum
+        final otherDosenList = dosenController.dosenList
+            .where((dosen) => dosen.id != dosenPA?.id)
+            .toList();
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(vertical: 20),
           children: [
-            const SizedBox(height: 20),
-            // Cek apakah mahasiswa punya dosen wali
-            if (dosen != null)
+            // Tampilkan Dosen Pembimbing Akademik di bagian atas
+            if (dosenPA != null)
+              _buildSectionTitle("Dosen Pembimbing Akademik"),
+            if (dosenPA != null)
               _buildConversationCard(
-                context: context,
-                dosenNama: dosen.nama,
-                dosenId: dosen.id,
-                dosenFotoUrl: dosen.foto, // Gunakan foto asli jika ada
-              )
+                dosen: dosenPA,
+                isDPA: true,
+              ),
+            if (dosenPA != null)
+              const Divider(height: 30, indent: 20, endIndent: 20),
+
+            // Tampilkan daftar semua dosen lainnya
+            _buildSectionTitle("Semua Dosen"),
+            if (otherDosenList.isEmpty)
+              _buildNoConversationCard("Tidak ada data dosen lain.")
             else
-              _buildNoConversationCard(),
+              ...otherDosenList
+                  .map((dosen) => _buildConversationCard(dosen: dosen))
+                  .toList(),
           ],
-        ),
-      ),
+        );
+      }),
       bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 
-  /// Widget untuk menampilkan item percakapan dengan Dosen Wali
-  Widget _buildConversationCard({
-    required BuildContext context,
-    required String dosenNama,
-    required int dosenId,
-    String? dosenFotoUrl,
-  }) {
-    return GestureDetector(
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.bold,
+          color: Colors.grey.shade800,
+        ),
+      ),
+    );
+  }
+
+  /// Widget untuk menampilkan item percakapan
+  Widget _buildConversationCard({required Dosen dosen, bool isDPA = false}) {
+    return InkWell(
       onTap: () {
-        // Navigasi ke halaman chat dengan membawa data dosen
         Get.to(() => ChatPage(
-              partnerId: dosenId,
-              partnerName: dosenNama,
+              partnerId: dosen.id,
+              partnerName: dosen.nama,
             ));
       },
       child: Container(
-        width: double.infinity,
-        height: 90,
-        margin: const EdgeInsets.symmetric(horizontal: 20),
-        padding: const EdgeInsets.symmetric(horizontal: 11),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            color: Colors.white, // Ganti bgcolor dengan white untuk kontras
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(0.2),
-                spreadRadius: 2,
-                blurRadius: 5,
-              )
-            ]),
+          borderRadius: BorderRadius.circular(15),
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              spreadRadius: 1,
+              blurRadius: 8,
+            )
+          ],
+        ),
         child: Row(
           children: [
             CircleAvatar(
               radius: 28,
               backgroundColor: greencolor.withOpacity(0.1),
-              // Tampilkan foto dosen jika ada, jika tidak, tampilkan inisial
-              backgroundImage:
-                  (dosenFotoUrl != null) ? NetworkImage(dosenFotoUrl) : null,
-              child: (dosenFotoUrl == null)
-                  ? Text(
-                      dosenNama.isNotEmpty ? dosenNama[0].toUpperCase() : 'D',
-                      style: TextStyle(fontSize: 24, color: greencolor),
-                    )
-                  : null,
+              // Anda perlu menambahkan foto_url ke Dosen model jika ingin menampilkan foto
+              backgroundImage: (dosen.fotoUrl != null)
+                  ? NetworkImage(dosen.fotoUrl!)
+                  : const AssetImage('asset/image/profile.png')
+                      as ImageProvider,
+
+              // child: Text(
+              //   dosen.nama.isNotEmpty ? dosen.nama[0].toUpperCase() : 'D',
+              //   style: TextStyle(fontSize: 24, color: greencolor, fontWeight: FontWeight.bold),
+              // ),
             ),
-            const SizedBox(width: 19),
+            const SizedBox(width: 16),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    dosenNama, // Nama Dosen Wali Dinamis
+                    dosen.nama,
                     style: const TextStyle(
-                        fontFamily: 'Poppinsmedium', fontSize: 16),
+                        fontFamily: 'Poppinsmedium',
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    "Dosen Pembimbing Akademik", // Subtitle
-                    style: TextStyle(
-                        fontFamily: 'Poppinsmedium',
-                        fontSize: 12,
-                        color: Colors.grey),
+                  Text(
+                    isDPA
+                        ? "Dosen Pembimbing Akademik"
+                        : (dosen.nip ?? "Dosen"),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
               ),
@@ -154,8 +142,7 @@ class _PesanPageState extends State<PesanPage> {
     );
   }
 
-  /// Widget yang ditampilkan jika tidak ada dosen pembimbing
-  Widget _buildNoConversationCard() {
+  Widget _buildNoConversationCard(String message) {
     return Container(
       padding: const EdgeInsets.all(20),
       margin: const EdgeInsets.all(20),
@@ -163,17 +150,32 @@ class _PesanPageState extends State<PesanPage> {
         color: Colors.grey.shade200,
         borderRadius: BorderRadius.circular(15),
       ),
-      child: const Center(
+      child: Center(
         child: Text(
-          "Dosen Pembimbing Akademik Anda belum diatur. Silakan hubungi admin prodi.",
+          message,
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16, color: Colors.black54),
+          style: const TextStyle(fontSize: 16, color: Colors.black54),
         ),
       ),
     );
   }
 
-  /// Widget untuk Bottom Navigation Bar
+  PreferredSizeWidget _buildAppBar() {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(80),
+      child: AppBar(
+        backgroundColor: greencolor,
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title: const Text(
+          "Pesan",
+          style: TextStyle(
+              fontFamily: 'PoppinsBold', fontSize: 25, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
   Widget _buildBottomNavigationBar(BuildContext context) {
     return BottomAppBar(
       color: const Color(0xFFFF9100),
@@ -181,10 +183,11 @@ class _PesanPageState extends State<PesanPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildNavBarItem(
-              context, 'asset/image/Circled Envelope (1).png', const PesanPage(),
+          _buildNavBarItem(context, 'asset/image/Circled Envelope (1).png',
+              const PesanPage(),
               isCentral: true),
-          _buildNavBarItem(context, 'asset/image/Home (1).png', const Homepage()),
+          _buildNavBarItem(
+              context, 'asset/image/Home (1).png', const Homepage()),
           _buildNavBarItem(
               context, 'asset/image/Male User.png', const InfoAkun()),
         ],
@@ -198,8 +201,8 @@ class _PesanPageState extends State<PesanPage> {
     return GestureDetector(
       onTap: () {
         if (isCentral) return;
-        Navigator.of(context)
-            .push(MaterialPageRoute(builder: (context) => destinationPage));
+        Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => destinationPage));
       },
       child: isCentral
           ? Container(
