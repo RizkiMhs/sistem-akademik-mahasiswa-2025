@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter_application_1/api/baseurl.dart';
 import 'package:flutter_application_1/models/dosen_model.dart';
 import 'package:flutter_application_1/models/program_studi_model.dart';
 import 'package:flutter_application_1/models/pengumuman_model.dart';
@@ -12,7 +13,7 @@ import 'dart:io'; // Untuk File
 class ApiService {
   // Ganti dengan URL base API Laravel Anda
   final String _baseUrl =
-      "http://192.168.100.11:8000/api"; // 10.0.2.2 adalah localhost untuk emulator Android
+      BaseUrl.baseUrl; // 10.0.2.2 adalah localhost untuk emulator Android
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
@@ -28,6 +29,7 @@ class ApiService {
     );
 
     final responseData = jsonDecode(response.body);
+    print(jsonEncode(response.body));
     if (response.statusCode == 200) {
       return responseData;
     } else {

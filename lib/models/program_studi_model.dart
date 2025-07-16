@@ -16,7 +16,7 @@ class ProgramStudi {
   /// It correctly maps 'nama_prodi' from the JSON to the 'namaProdi' field.
   factory ProgramStudi.fromJson(Map<String, dynamic> json) {
     return ProgramStudi(
-      id: json['id'],
+      id: json['id'] ?? 0, // Default to 0 if id is null
       namaProdi: json['nama_prodi'],
     );
   }
